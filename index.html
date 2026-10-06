@@ -845,6 +845,33 @@ button.prof:hover{background:var(--raise)}
 .pw-acts .gate-link,.pw-made .gate-link{padding:2px 0;font-size:13px;color:var(--accent)}
 .pw-made{align-self:stretch;margin:0;font-size:13px;line-height:1.5;color:var(--ink-2);background:var(--raise);border-radius:8px;padding:8px 10px}
 .pw-val{font-family:"Courier Prime","Courier New",monospace;color:var(--ink);letter-spacing:.02em;overflow-wrap:anywhere}
+.font-now{display:flex;flex-direction:column;gap:6px;width:100%;border:1px solid var(--line);background:var(--raise);border-radius:10px;padding:12px 14px;text-align:left;color:var(--ink)}
+.font-now:hover{border-color:var(--accent)}
+.fn-sample{font-size:17px;line-height:1.35;overflow-wrap:anywhere}
+.fn-sample.big{font-size:24px;line-height:1.15}
+.fn-meta{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font:13px var(--ui)}
+.fn-meta b{font-weight:600;color:var(--ink-2)}
+.fn-meta span{color:var(--accent);font-weight:600}
+.fb-tools{display:flex;gap:10px;align-items:center}
+.fb-search{position:relative;flex:1;min-width:0}
+.fb-search svg{position:absolute;left:11px;top:50%;width:15px;height:15px;transform:translateY(-50%);fill:none;stroke:var(--ink-3);stroke-width:1.8;stroke-linecap:round;pointer-events:none}
+.fb-search input{width:100%;border:1px solid var(--line);background:var(--raise);border-radius:999px;padding:8px 14px 8px 33px;font-size:14px;color:var(--ink)}
+.fb-ital{flex:none;font-size:13px}
+.fb-cats{display:flex;flex-wrap:wrap;gap:6px}
+.fb-cats button{flex:none;border:1px solid var(--line);background:none;color:var(--ink-2);border-radius:999px;padding:5px 12px;font:12.5px var(--ui);white-space:nowrap}
+.fb-cats button[aria-pressed="true"]{background:var(--ink);color:var(--desk);border-color:var(--ink)}
+.fb-list{display:flex;flex-direction:column;gap:2px;max-height:min(60vh,560px);overflow:auto;margin:0 -6px;padding:0 6px;scrollbar-width:thin}
+.fb-row{position:relative;display:flex;flex-direction:column;gap:3px;width:100%;border:0;border-bottom:1px solid var(--line);background:none;text-align:left;color:var(--ink);padding:12px 34px 12px 10px;border-radius:8px}
+.fb-row:hover{background:var(--raise)}
+.fb-row.on{background:var(--accent-soft)}
+.fb-sample{font-size:18px;line-height:1.3;overflow-wrap:anywhere}
+.fb-sample.big{font-size:26px;line-height:1.15}
+.fb-name{font:600 12.5px var(--ui);color:var(--ink-2)}
+.fb-name small{font-weight:400;color:var(--ink-3);margin-left:6px}
+.fb-tick{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--accent);font-weight:700}
+.fb-empty,.fb-note{margin:0;font-size:12.5px;color:var(--ink-3);line-height:1.5}
+.fb-empty{padding:16px 4px}
+@media (max-width:720px){.fb-list{max-height:none;overflow:visible}.fb-sample.big{font-size:22px}}
 .htabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-top:-6px}
 .htabs button{border:0;background:none;color:var(--ink-2);padding:8px 12px;font-size:13.5px;border-bottom:2px solid transparent;margin-bottom:-1px}
 .htabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
@@ -1252,7 +1279,32 @@ const RETIRED_TYPE = {"Cinzel Decorative":"DM Serif Display", "Castoro Titling":
   "Instrument Serif":"Bodoni Moda|i", "Instrument Serif|i":"Bodoni Moda|i", "Bodoni Moda":"Bodoni Moda|i", "Italiana":"Cormorant Garamond", "Alice":"Literata", "Almendra":"Berkshire Swash", "Yeseva One":"DM Serif Display",
   "Petit Formal Script":"Great Vibes", "Gloock":"DM Serif Display", "Bebas Neue":"Black Ops One", "Eagle Lake":"Great Vibes", "Grenze Gotisch":"New Rocker", "IM Fell Double Pica":"IM Fell Double Pica|i",
   "Libre Baskerville":"Literata", "Cardo":"EB Garamond"};
-const fontStack = f => `"${f}", ${/Courier|Mono|Elite|VT323/.test(f) ? '"Courier New", monospace' : /Caveat|Kalam|Pacifico|Great Vibes|Rock Salt|Yellowtail|Permanent Marker|Lobster|Chewy/.test(f) ? 'cursive' : /Atkinson|Figtree|Instrument|Nunito|Oswald|Exo|Fredoka|Franklin|Manrope|Outfit|DM Sans|Comfortaa|Bungee|Orbitron|Unbounded|Righteous/.test(f) ? 'system-ui, sans-serif' : 'Georgia, serif'}`;
+/* ---------- The font library: [group, fonts]. All are free Google Fonts, except Comic Sans, which uses the
+   computer's own copy and falls back to the free look-alike Comic Neue. Fonts load only when someone uses them. */
+const FONT_CATALOG = [["Book classics", ["Lora", "Literata", "EB Garamond", "Crimson Pro", "Source Serif 4", "Spectral", "Merriweather", "Alegreya", "Libre Baskerville", "Cardo", "Cormorant Garamond", "Newsreader", "Bitter", "Vollkorn", "PT Serif", "Gentium Book Plus", "Old Standard TT", "Libre Caslon Text", "Fraunces", "IM Fell English", "Playfair Display", "DM Serif Display", "Bodoni Moda", "Gloock", "Instrument Serif"]], ["Clean & clear", ["Atkinson Hyperlegible", "Lexend", "Nunito", "Figtree", "Instrument Sans", "Work Sans", "Quicksand", "Manrope", "Outfit", "Libre Franklin", "Josefin Sans", "Poppins", "Karla", "Oswald", "Bebas Neue"]], ["Handwritten", ["Kalam", "Caveat", "Patrick Hand", "Indie Flower", "Shadows Into Light", "Gochi Hand", "Architects Daughter", "Gloria Hallelujah", "Schoolbell", "Reenie Beanie", "Covered By Your Grace", "Nothing You Could Do", "Homemade Apple", "Dancing Script", "Satisfy", "Sacramento", "Great Vibes", "Pacifico", "Yellowtail", "Permanent Marker", "Rock Salt"]], ["Typewriter", ["Courier Prime", "Special Elite", "Cutive Mono", "IBM Plex Mono", "Space Mono", "Anonymous Pro", "Major Mono Display"]], ["Comic & playful", ["Comic Sans", "Comic Neue", "Bangers", "Chewy", "Fredoka", "Baloo 2", "Luckiest Guy", "Bubblegum Sans", "Sniglet", "Boogaloo", "Titan One", "Coiny", "Mali", "Lobster", "Righteous", "Bungee", "Shrikhand", "Knewave", "Rubik Bubbles"]], ["Fantasy & spooky", ["Cinzel", "Cinzel Decorative", "MedievalSharp", "Uncial Antiqua", "UnifrakturMaguntia", "Pirata One", "Almendra", "Metamorphous", "Macondo", "Grenze Gotisch", "Henny Penny", "Griffy", "New Rocker", "Berkshire Swash", "Fredericka the Great", "Creepster", "Nosifer", "Butcherman", "Eater", "Frijole", "Mystery Quest", "Spirax"]], ["Weird & wild", ["VT323", "Press Start 2P", "Silkscreen", "Pixelify Sans", "Sixtyfour", "Jacquard 24", "Monoton", "Orbitron", "Audiowide", "Rubik Glitch", "Rubik Wet Paint", "Rubik Puddles", "Rubik Moonrocks", "Bungee Shade", "Nabla", "Honk", "Kablammo", "Faster One", "Wallpoet", "Codystar", "Fascinate", "Ewert", "Plaster", "Rampart One", "Zen Tokyo Zoo", "Shojumaru", "Black Ops One", "Sedgwick Ave Display", "Limelight", "Rye", "Trade Winds", "Alfa Slab One"]]];
+const LONG_OK = new Set(["Lora", "Literata", "EB Garamond", "Crimson Pro", "Source Serif 4", "Spectral", "Merriweather", "Alegreya", "Libre Baskerville", "Cardo", "Cormorant Garamond", "Newsreader", "Bitter", "Vollkorn", "PT Serif", "Gentium Book Plus", "Old Standard TT", "Libre Caslon Text", "Fraunces", "IM Fell English", "Atkinson Hyperlegible", "Lexend", "Nunito", "Figtree", "Instrument Sans", "Work Sans", "Quicksand", "Manrope", "Outfit", "Libre Franklin", "Karla", "Poppins", "Kalam", "Patrick Hand", "Courier Prime", "Cutive Mono", "IBM Plex Mono", "Comic Sans", "Comic Neue", "Mali"]); // comfortable for a whole book, not just titles
+const FONT_GROUP_OF = Object.fromEntries(FONT_CATALOG.flatMap(([g, l]) => l.map(f => [f, g])));
+const ALL_FONTS = new Set([...FONT_CATALOG.flatMap(([, l]) => l), ...FONT_LIST]);
+const fontLoaded = new Set(["Alegreya", "Alfa Slab One", "Atkinson Hyperlegible", "Audiowide", "Bangers", "Berkshire Swash", "Black Ops One", "Bodoni Moda", "Caveat", "Cinzel", "Cormorant Garamond", "Cormorant Infant", "Courier Prime", "Crimson Pro", "DM Serif Display", "EB Garamond", "Exo 2", "Figtree", "Fraunces", "Fredericka the Great", "Fredoka", "Great Vibes", "Griffy", "Henny Penny", "IM Fell Double Pica", "IM Fell English", "Instrument Sans", "Kalam", "Knewave", "Limelight", "Literata", "Lora", "Merriweather", "Monoton", "New Rocker", "Nunito", "Oswald", "Pacifico", "Permanent Marker", "Playfair Display", "Press Start 2P", "Rock Salt", "Rubik Bubbles", "Rye", "Sedgwick Ave Display", "Shrikhand", "Source Serif 4", "Space Mono", "Special Elite", "Spectral", "Trade Winds", "VT323", "Yellowtail"].concat(FONT_LIST)); // built into the app, or loaded by the page already
+function fontHref(fams, text) { return "https://fonts.googleapis.com/css2?" + fams.map(f => "family=" + encodeURIComponent(f).replace(/%20/g, "+")).join("&") + (text ? "&text=" + encodeURIComponent(text) : "") + "&display=swap"; }
+function ensureFont(f) {
+  f = fontPart(f); if (!f) return;
+  const fam = f === "Comic Sans" ? "Comic Neue" : f;
+  if (fontLoaded.has(fam)) return; fontLoaded.add(fam);
+  const l = document.createElement("link"); l.rel = "stylesheet"; l.href = fontHref([fam]); document.head.appendChild(l);
+}
+const previewLoaded = new Set();
+function previewFonts(list, text) { // just the letters of the sample, so browsing 100 fonts stays light
+  const need = list.map(f => f === "Comic Sans" ? "Comic Neue" : f).filter(f => !fontLoaded.has(f) && !previewLoaded.has(f + "|" + text));
+  for (let i = 0; i < need.length; i += 20) {
+    const part = need.slice(i, i + 20); part.forEach(f => previewLoaded.add(f + "|" + text));
+    const l = document.createElement("link"); l.rel = "stylesheet"; l.href = fontHref(part, text); document.head.appendChild(l);
+  }
+}
+const FALLBACK = {"Handwritten":"cursive", "Typewriter":'"Courier New", monospace', "Clean & clear":"system-ui, sans-serif", "Comic & playful":"system-ui, sans-serif", "Weird & wild":"system-ui, sans-serif", "Book classics":"Georgia, serif", "Fantasy & spooky":"Georgia, serif"};
+const fontStack = f => f === "Comic Sans" ? '"Comic Sans MS", "Comic Sans", "Comic Neue", "Chalkboard SE", cursive'
+  : FONT_GROUP_OF[f] ? `"${f}", ${FALLBACK[FONT_GROUP_OF[f]]}` : fontStackOld(f);
+const fontStackOld = f => `"${f}", ${/Courier|Mono|Elite|VT323/.test(f) ? '"Courier New", monospace' : /Caveat|Kalam|Pacifico|Great Vibes|Rock Salt|Yellowtail|Permanent Marker|Lobster|Chewy/.test(f) ? 'cursive' : /Atkinson|Figtree|Instrument|Nunito|Oswald|Exo|Fredoka|Franklin|Manrope|Outfit|DM Sans|Comfortaa|Bungee|Orbitron|Unbounded|Righteous/.test(f) ? 'system-ui, sans-serif' : 'Georgia, serif'}`;
 const AUTO_CLOTHS = ["#3E4F57","#6B4E3D","#4F5D3E","#7A3F3B","#434564","#8A6A3A","#5E4A66","#2F4B40","#6D5A48","#3F5A6E"];
 const clothOf = b => b.color || AUTO_CLOTHS[[...b.id].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % AUTO_CLOTHS.length];
 const CLOTHS = [["Terracotta","#A8553A"],["Oxblood","#5A1C20"],["Forest","#2F4A38"],["Ink blue","#2E3B66"],["Slate","#3A4350"],["Ochre","#8A5E1E"],["Plum","#4E3358"],["Charcoal","#2B2B2B"]];
@@ -2162,8 +2214,8 @@ const decoOf = id => DECOS.find(d => d[0] === id) || DECOS[0];
 const bookStyleOf = b => { // the book's style, plus this book's own font and decoration choices
   const base = baseStyleOf(b), t = b && b.type; if (!t) return base;
   const o = Object.assign({}, base);
-  if (t.body && FONT_LIST.includes(t.body)) o.body = t.body;
-  if (t.head && FONT_LIST.includes(fontPart(t.head))) { o.head = fontPart(t.head); o.headItalic = isItal(t.head); }
+  if (t.body && ALL_FONTS.has(t.body)) o.body = t.body;
+  if (t.head && ALL_FONTS.has(fontPart(t.head))) { o.head = fontPart(t.head); o.headItalic = isItal(t.head); }
   const d = decoOf(t.deco); if (d[0] !== "none") { o.deco = d[0]; o.scene = d[3]; }
   return o;
 };
@@ -2189,6 +2241,7 @@ function themeVars(t) {
   };
 }
 function styleVars(st, a) {
+  ensureFont(st.body); ensureFont(st.head);
   const size = (SIZES.find(x => x[0] === a.size) || SIZES[1])[2], sp = (SPACING.find(x => x[0] === a.spacing) || SPACING[1])[2];
   return {
     "--body-font": fontStack(st.body), "--head-font": fontStack(st.head),
@@ -3884,6 +3937,7 @@ function renderDrawer() {
   }
   const st = baseStyleOf(b), eff = bookStyleOf(b);
   const users = lib.books.filter(x => x.style === st.id && x.id !== b.id).map(x => x.title);
+  if (dMode === "fonts") return renderFontBrowser(b, eff);
   if (dMode === "gallery") {
     $("#dTitle").textContent = "Fonts & style"; $("#dScope").textContent = `For “${b.title}” · remembered for this book`;
     const grp = x => x.custom ? "yours" : x.group === "genre" ? "genre" : "classic";
@@ -3896,15 +3950,8 @@ function renderDrawer() {
     };
     const deco = eff.deco || "none";
     dBody.innerHTML = `
-      <div class="dsec"><span>Story text</span><div class="fchips" data-tf="body">${fontChips("body", BODY_FONTS)}</div></div>
-      <div class="dsec"><span>Chapter &amp; book titles</span>${TITLE_FONTS.some(([f]) => fontPart(f) === st.head) ? "" : `<div class="fchips big" data-tf="head">${fontChips("head", []).trim()}</div>`}
-        ${(() => {
-          const effV = eff.head + (eff.headItalic ? "|i" : "");
-          if (!titleGroup) titleGroup = (TITLE_GROUPS.find(([, l]) => l.some(([v]) => fontPart(v) === eff.head)) || TITLE_GROUPS[0])[0];
-          const list = (TITLE_GROUPS.find(([g]) => g === titleGroup) || TITLE_GROUPS[0])[1];
-          return `<div class="tgroups" data-tg>${TITLE_GROUPS.map(([g, l]) => `<button type="button" data-v="${esc(g)}" class="${g === titleGroup ? "on" : ""}">${esc(g)}${l.some(([v]) => v === effV) ? " •" : ""}</button>`).join("")}</div>
-            <div class="fchips big" data-tf="head">${list.map(([v, l]) => { const f = fontPart(v); return `<button type="button" data-v="${esc(v)}" class="${effV === v ? "on" : ""}" title="${esc(f)}"><span style="font-family:${esc(fontStack(f))};font-size:${HEAD_SCALE[f] || 1}em;font-style:${isItal(v) ? "italic" : "normal"}">${esc(l)}</span></button>`; }).join("")}</div>`;
-        })()}</div>
+      <div class="dsec"><span>Story text</span>${fontNow("body", eff.body, FONT_SAMPLE_BODY)}</div>
+      <div class="dsec"><span>Chapter &amp; book titles</span>${fontNow("head", eff.head, titleSample(b), eff.headItalic)}</div>
       <div class="dsec"><span>Decoration</span><div class="fchips deco" data-tf="deco">${DECOS.map(([id, name, orn]) => `<button type="button" data-v="${id}" class="${deco === id ? "on" : ""}">${orn ? `<span class="og">${esc(orn)}</span>` : ""}${esc(name)}</button>`).join("")}</div>
         <div class="dsub">Ornaments under chapter titles, around the book title and as the scene break.</div></div>
       <div class="dsec" style="margin-top:6px"><span>Start from a style</span>${segHTML("data-sgroup", "g", sGroup, groups)}<div class="sgrid" style="margin-top:4px">${allStyles().filter(x => grp(x) === sGroup).map(x => styleCard(x, x.id === st.id)).join("")}</div></div>
@@ -3934,6 +3981,55 @@ function refreshPage() {
   clearTimeout(saveT); saveT = setTimeout(saveLib, 500);
 }
 let sGroup = null, titleGroup = null; const fontGroupSel = {};
+/* ---------- Font browser ---------- */
+const FONT_SAMPLE_BODY = "The orchard had been salted the year her mother left.";
+const titleSample = b => b && b.title && !isSealed(b.title) ? b.title : "Chapter One";
+const fb = {key:"body", cat:"All", q:""};
+function fontNow(key, f, sample, ital) {
+  ensureFont(f);
+  return `<button type="button" class="font-now" data-fopen="${key}"><span class="fn-sample${key === "head" ? " big" : ""}" style="font-family:${esc(fontStack(f))};font-style:${ital ? "italic" : "normal"}">${esc(sample)}</span>
+    <span class="fn-meta"><b>${esc(f)}</b><span>Change font</span></span></button>`;
+}
+function fontCats(key) { return ["All", ...(key === "body" ? ["Easy to read"] : []), ...FONT_CATALOG.map(([g]) => g)]; }
+function fontMatches(key) {
+  const q = fb.q.trim().toLowerCase();
+  let list = FONT_CATALOG.flatMap(([g, l]) => l.map(f => ({f, g})));
+  if (fb.cat === "Easy to read") list = list.filter(x => LONG_OK.has(x.f));
+  else if (fb.cat !== "All") list = list.filter(x => x.g === fb.cat);
+  if (q) list = list.filter(x => x.f.toLowerCase().includes(q) || x.g.toLowerCase().includes(q) || (q.includes("comic") && x.g === "Comic & playful"));
+  return list;
+}
+function fontRowsHTML(b, eff) {
+  const key = fb.key, cur = key === "body" ? eff.body : eff.head, sample = key === "body" ? FONT_SAMPLE_BODY : titleSample(b);
+  const list = fontMatches(key);
+  previewFonts(list.map(x => x.f), sample);
+  if (!list.length) return `<p class="fb-empty">No font called “${esc(fb.q)}”. Try another name, or pick a group above.</p>`;
+  return list.map(({f, g}) => `<button type="button" class="fb-row${f === cur ? " on" : ""}" data-font="${esc(f)}" aria-pressed="${f === cur}">
+      <span class="fb-sample${key === "head" ? " big" : ""}" style="font-family:${esc(fontStack(f))};font-style:${key === "head" && eff.headItalic ? "italic" : "normal"};font-size:${key === "head" ? Math.round((HEAD_SCALE[f] || 1) * 100) : 100}%">${esc(sample)}</span>
+      <span class="fb-name">${esc(f)}<small>${esc(g)}${key === "body" && !LONG_OK.has(f) ? " · fun, but tiring for a whole book" : ""}${f === "Comic Sans" ? " · Comic Neue where Comic Sans isn't installed" : ""}</small></span>
+      ${f === cur ? '<span class="fb-tick" aria-hidden="true">✓</span>' : ""}</button>`).join("");
+}
+function renderFontBrowser(b, eff) {
+  const key = fb.key;
+  $("#dTitle").textContent = key === "body" ? "Story text font" : "Title font";
+  $("#dScope").textContent = `For “${isSealed(b.title) ? "this book" : b.title}” · tap a font to try it on your page`;
+  dBody.innerHTML = `<button type="button" class="back-link" id="fBack">← Fonts &amp; style</button>
+    <div class="fb-tools"><label class="fb-search"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.6"/><path d="m10.5 10.5 3.2 3.2"/></svg><input type="search" id="fSearch" placeholder="Search ${FONT_CATALOG.reduce((n, [, l]) => n + l.length, 0)} fonts" value="${esc(fb.q)}" aria-label="Search fonts" autocomplete="off"></label>
+      ${key === "head" ? `<label class="check fb-ital"><input type="checkbox" id="fItal"${eff.headItalic ? " checked" : ""}> Italic</label>` : ""}</div>
+    <div class="fb-cats" role="group" aria-label="Font groups">${fontCats(key).map(c => `<button type="button" data-fcat="${esc(c)}" aria-pressed="${c === fb.cat}">${esc(c)}</button>`).join("")}</div>
+    <div class="fb-list" id="fList">${fontRowsHTML(b, eff)}</div>
+    <p class="fb-note">Fonts are free from Google Fonts and download the first time they're used, so they need internet once.</p>`;
+}
+function setBookFont(b, key, f, ital) {
+  b.type = Object.assign({}, b.type);
+  if (key === "head") b.type.head = f + (ital ? "|i" : ""); else b.type.body = f;
+  ensureFont(f); refreshPage();
+}
+dBody.addEventListener("input", e => {
+  if (e.target.id !== "fSearch") return; const b = scopeBook(); if (!b) return;
+  fb.q = e.target.value; if (fb.q && fb.cat !== "All") { fb.cat = "All"; $$("[data-fcat]").forEach(x => x.setAttribute("aria-pressed", String(x.dataset.fcat === "All"))); }
+  $("#fList").innerHTML = fontRowsHTML(b, bookStyleOf(b));
+});
 function startEditStyle() {
   const b = scopeBook(); if (!b) return;
   const base = baseStyleOf(b);
@@ -3963,6 +4059,14 @@ dBody.addEventListener("click", async e => {
   if (fg) { const top = dBody.scrollTop; fontGroupSel[fg.parentElement.dataset.fgroup] = fg.dataset.g2; renderDrawer(); dBody.scrollTop = top; return; }
   const sc = T.closest(".scard[data-sid]");
   if (sc && b) { const top = dBody.scrollTop; b.style = sc.dataset.sid; lib.settings.defaultStyle = b.style; if (b.type) { delete b.type.body; delete b.type.head; } refreshPage(); renderDrawer(); dBody.scrollTop = top; return; }
+  const fo = T.closest("[data-fopen]");
+  if (fo && b) { fb.key = fo.dataset.fopen; fb.cat = "All"; fb.q = ""; dMode = "fonts"; renderDrawer(); dBody.scrollTop = 0; return; }
+  if (T.closest("#fBack")) { dMode = "gallery"; renderDrawer(); dBody.scrollTop = 0; return; }
+  const fc = T.closest("[data-fcat]");
+  if (fc && b) { fb.cat = fc.dataset.fcat; $$("[data-fcat]").forEach(x => x.setAttribute("aria-pressed", String(x === fc))); $("#fList").innerHTML = fontRowsHTML(b, bookStyleOf(b)); $("#fList").scrollTop = 0; return; }
+  const fr = T.closest("[data-font]");
+  if (fr && b) { const top = $("#fList").scrollTop, eff = bookStyleOf(b); setBookFont(b, fb.key, fr.dataset.font, fb.key === "head" && eff.headItalic); $("#fList").innerHTML = fontRowsHTML(b, bookStyleOf(b)); $("#fList").scrollTop = top; return; }
+  if (T.closest("#fItal") && b) { const eff = bookStyleOf(b); setBookFont(b, "head", eff.head, $("#fItal").checked); const top = $("#fList").scrollTop; $("#fList").innerHTML = fontRowsHTML(b, bookStyleOf(b)); $("#fList").scrollTop = top; return; }
   const tgb = T.closest("[data-tg] button");
   if (tgb) { const top = dBody.scrollTop; titleGroup = tgb.dataset.v; renderDrawer(); dBody.scrollTop = top; return; }
   const tf = T.closest("[data-tf] button");
