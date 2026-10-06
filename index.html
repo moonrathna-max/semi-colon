@@ -1834,9 +1834,8 @@ async function sbAuth(path, body, method = "POST", token) {
   const j = await r.json().catch(() => ({}));
   if (!r.ok) {
     const raw = j.msg || j.error_description || j.message || j.error || "", m = raw.toLowerCase();
-    const nice = /invalid login|invalid_grant|invalid credentials/.test(m) ? "That email and password don't match. Check both and try again. (Don't have an account? Semi Colon works without one: go back and choose Continue on this device.)"
+    const nice = /invalid login|invalid_grant|invalid credentials/.test(m) ? "That email and password don't match, or there's no account with this email yet. Check both, or press Create an account below."
       : /not confirmed/.test(m) ? "Your email isn't confirmed yet. Open the link we emailed you, then sign in."
-      : /signups? not allowed|signup.*disabled/.test(m) ? "New accounts can't be made here. You can still write without one: choose Continue on this device."
       : /already registered|already exists/.test(m) ? "There's already an account with that email. Sign in instead."
       : /at least|weak|short/.test(m) && /password/.test(m) ? "That password is too short. Use at least 6 characters."
       : /rate|too many|seconds/.test(m) ? "Too many tries. Wait a minute and try again."
@@ -1936,8 +1935,9 @@ async function readAuthHash() {
 function authCard(m) {
   const err = `<div class="gate-err" id="gErr">${esc(gate.err || "")}</div>`, em = esc(gate.email || "");
   const mail = `<input type="email" id="aEmail" autocomplete="email" placeholder="Email" aria-label="Email" value="${em}" required>`;
-  if (m === "signin") return `<div class="gate-mark">;</div><h1>Semi Colon</h1><p>A quiet space for your next chapter.</p><button type="button" class="btn primary lg" data-ac="local" style="width:100%">Continue on this device</button><details class="signin-details"><summary>I have an account</summary>
+  if (m === "signin") return `<div class="gate-mark">;</div><h1>Semi Colon</h1><p>A quiet space for your next chapter.</p><button type="button" class="btn primary lg" data-ac="local" style="width:100%">Continue on this device</button><details class="signin-details"><summary>Sign in to sync your books</summary>
     <form class="gate-form auth-form" id="aForm" data-af="signin">${mail}<input type="password" id="aPw" autocomplete="current-password" placeholder="Password" aria-label="Password" required><button type="submit" class="btn primary lg">Sign in</button></form>${err}
+    <button type="button" class="gate-link" data-ac="signup">New here? Create an account</button>
     <button type="button" class="gate-link" data-ac="forgot">Forgot your account password?</button>
     </details>`;
   if (m === "signup") return `<div class="gate-mark">;</div><h1>Create an account</h1><p>Only you can see your books.</p>
@@ -4664,7 +4664,7 @@ function openProfiles() {
   $("#newProfileForm").hidden = true; $("#renameForm").hidden = true; $("#profileActs").hidden = false; $("#newProfileName").value = "";
   const locked = document.body.classList.contains("locked"); // from the lock screen you can switch or add, but not rename or change the account
   $("#renameProfileToggle").hidden = locked; $("#profileAccountBtn").closest(".modal-foot").hidden = locked;
-  $("#profileAccountNote").textContent = SB.s ? `Syncing as ${SB.s.email || accountName()}.` : "Have a Semi Colon account? Sign in to sync this shelf between computers.";
+  $("#profileAccountNote").textContent = SB.s ? `Syncing as ${SB.s.email || accountName()}.` : "Want this shelf on another computer too? Sign in to sync it.";
   $("#profileAccountBtn").textContent = SB.s ? "Account settings" : "Sign in";
   const modal = $("#profilesModal"); modal.hidden = false; requestAnimationFrame(() => $("#addProfile")?.focus());
 }
