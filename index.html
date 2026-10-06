@@ -818,6 +818,13 @@ button.prof:hover{background:var(--raise)}
 .prof small{display:block;color:var(--ink-3);font-size:12.5px}
 .prof .here{font-size:12px;color:var(--accent);font-weight:600}
 .prof-list{display:flex;flex-direction:column;gap:2px}
+.prof-row{display:flex;align-items:center;gap:4px}
+.prof-row .prof{flex:1;min-width:0}
+.prof-x{border:0;background:none;color:var(--ink-3);font-size:12.5px;padding:6px 10px;border-radius:8px;flex:none}
+.prof-x:hover{color:var(--danger);background:var(--raise)}
+.remove-box{display:flex;flex-direction:column;gap:10px;background:var(--raise);border-radius:10px;padding:12px}
+.remove-box p{margin:0;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+.remove-box[hidden]{display:none}
 .inline-form{display:flex;gap:8px}
 .inline-form input{flex:1;min-width:0;border:1px solid var(--line);background:var(--raise);border-radius:8px;padding:8px 11px;font-size:14px;color:var(--ink)}
 .inline-form[hidden]{display:none}
@@ -873,6 +880,7 @@ button.prof:hover{background:var(--raise)}
   <p class="sub">Everyone gets their own shelf on this computer. Books never mix, and switching keeps everything saved.</p>
   <div class="prof-list" id="profileList"></div>
   <form id="renameForm" class="inline-form" hidden><input id="renameName" maxlength="40" aria-label="Your name" placeholder="Your name"><button class="btn primary">Save</button><button type="button" class="btn ghost" id="renameCancel">Cancel</button></form>
+  <form id="removeForm" class="remove-box" hidden><p id="removeMsg"></p><div class="inline-form"><input id="removeName" autocomplete="off" aria-label="Type the name to confirm"><button class="btn danger" id="removeGo">Remove</button><button type="button" class="btn ghost" id="removeCancel">Cancel</button></div></form>
   <form id="newProfileForm" class="inline-form" hidden><input id="newProfileName" placeholder="Their name" aria-label="Their name" maxlength="40" required><button class="btn primary">Add</button><button type="button" class="btn ghost" id="newProfileCancel">Cancel</button></form>
   <div style="display:flex;gap:8px;flex-wrap:wrap" id="profileActs"><button class="btn" id="addProfile" type="button">Add someone</button><button class="btn ghost" id="renameProfileToggle" type="button">Change my name</button></div>
   <div class="modal-foot"><span class="fine" id="profileAccountNote"></span><button class="btn" id="profileAccountBtn" type="button">Sign in</button></div>
@@ -4654,15 +4662,49 @@ function displayNameFor(p) {
   return p.id === (SB.s || {}).uid && generic ? accountName() : stored || "My writing";
 }
 function setWho() { const n = profileName(); $("#profileNm").textContent = n; $("#profileAv").textContent = (n.trim()[0] || "M").toUpperCase(); }
+const MAX_PEOPLE = 8;
+function profileKeyPrefix(id) { return id === rawGet("semi.legacyScope") ? null : "semi.profile." + id + "."; }
+function profileBooks(id) {
+  const l = parse(rawGet(id === rawGet("semi.legacyScope") ? "semi.lib" : "semi.profile." + id + ".lib"));
+  const books = (l && l.books) || []; return {n:books.length, w:books.reduce((x, b) => x + (b.words || 0), 0)};
+}
+function askRemove(id) {
+  const p = (parse(rawGet("semi.profiles")) || []).find(x => x.id === id); if (!p || id === activeScope) return;
+  const name = displayNameFor(p), {n, w} = profileBooks(id), account = !/^local/.test(id);
+  const f = $("#removeForm"); f.dataset.id = id; f.dataset.name = name; f.hidden = false; $("#profileActs").hidden = true;
+  const needType = !account && n > 0;
+  $("#removeMsg").innerHTML = account
+    ? `Remove <b>${esc(name)}</b> from this computer? Their books stay safe in their account and come back when they sign in again.`
+    : n ? `Remove <b>${esc(name)}</b>? Their ${n} book${n === 1 ? "" : "s"} (${fmt(w)} words) are only on this computer and will be <b>gone for good</b>. To keep them, switch to ${esc(name)} first and use Settings, Download a backup. To go ahead, type <b>${esc(name)}</b> below.`
+    : `Remove <b>${esc(name)}</b>? They have no books.`;
+  const inp = $("#removeName"); inp.value = ""; inp.hidden = !needType; inp.placeholder = needType ? name : "";
+  $("#removeGo").textContent = "Remove " + name;
+  (needType ? inp : $("#removeGo")).focus();
+}
+async function removeProfile(id) {
+  if (!id || id === activeScope) return;
+  const prefix = profileKeyPrefix(id), global = new Set(["semi.test", "semi.owner", "semi.scope", "semi.legacyScope", "semi.profiles"]);
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i); if (!k) continue;
+      if (prefix ? k.startsWith(prefix) : (k.startsWith("semi.") && !k.startsWith("semi.profile.") && !global.has(k))) localStorage.removeItem(k);
+    }
+  } catch {}
+  try { indexedDB.deleteDatabase(prefix ? "semicolon-profile-" + id : "semicolon"); } catch {}
+  rawSet("semi.profiles", JSON.stringify((parse(rawGet("semi.profiles")) || []).filter(x => x.id !== id)));
+  if (rawGet("semi.owner") === id) rawDel("semi.owner");
+}
 function openProfiles() {
+  const locked = document.body.classList.contains("locked");
   const list = (parse(rawGet("semi.profiles")) || []).slice().sort((a, b) => (b.id === activeScope) - (a.id === activeScope));
   $("#profileList").innerHTML = list.map(p => {
     const name = displayNameFor(p), here = p.id === activeScope;
     const inner = `<span class="av">${esc((name.trim()[0] || "M").toUpperCase())}</span><span><b>${esc(name)}</b><small>${esc(profileStats(p.id))}</small></span>`;
-    return here ? `<div class="prof">${inner}<span class="here">Open now</span></div>` : `<button class="prof" type="button" data-profile="${esc(p.id)}" title="Switch to ${esc(name)}'s shelf">${inner}</button>`;
+    if (here) return `<div class="prof">${inner}<span class="here">Open now</span></div>`;
+    return `<div class="prof-row"><button class="prof" type="button" data-profile="${esc(p.id)}" title="Switch to ${esc(name)}'s shelf">${inner}</button>${locked ? "" : `<button class="prof-x" type="button" data-remove="${esc(p.id)}" title="Remove ${esc(name)} from this computer" aria-label="Remove ${esc(name)} from this computer">Remove</button>`}</div>`;
   }).join("");
-  $("#newProfileForm").hidden = true; $("#renameForm").hidden = true; $("#profileActs").hidden = false; $("#newProfileName").value = "";
-  const locked = document.body.classList.contains("locked"); // from the lock screen you can switch or add, but not rename or change the account
+  $("#newProfileForm").hidden = true; $("#renameForm").hidden = true; $("#removeForm").hidden = true; $("#profileActs").hidden = false; $("#newProfileName").value = "";
+  // from the lock screen you can switch or add, but not rename, remove or change the account
   $("#renameProfileToggle").hidden = locked; $("#profileAccountBtn").closest(".modal-foot").hidden = locked;
   $("#profileAccountNote").textContent = SB.s ? `Syncing as ${SB.s.email || accountName()}.` : "Want this shelf on another computer too? Sign in to sync it.";
   $("#profileAccountBtn").textContent = SB.s ? "Account settings" : "Sign in";
@@ -4874,7 +4916,14 @@ $("#profileBtn").addEventListener("click", openProfiles);
 $("#gateProfiles").addEventListener("click", openProfiles);
 $("#profileAccountBtn").addEventListener("click", () => { $("#profilesModal").hidden = true; if (SB.s) openSettings(); else { lsDel("semi.nocloud"); showAuth("signin"); } });
 $("#profileList").addEventListener("click", e => { const row = e.target.closest("[data-profile]"); if (row) { e.preventDefault(); e.stopPropagation(); switchProfile(row.dataset.profile); } });
-$("#addProfile").addEventListener("click", () => { $("#profileActs").hidden = true; $("#newProfileForm").hidden = false; $("#newProfileName").focus(); });
+$("#profileList").addEventListener("click", e => { const x = e.target.closest("[data-remove]"); if (x) { e.preventDefault(); e.stopPropagation(); askRemove(x.dataset.remove); } }, true);
+$("#removeCancel").addEventListener("click", () => { $("#removeForm").hidden = true; $("#profileActs").hidden = false; });
+$("#removeForm").addEventListener("submit", async e => {
+  e.preventDefault(); const f = $("#removeForm"), inp = $("#removeName");
+  if (!inp.hidden && inp.value.trim().toLowerCase() !== f.dataset.name.trim().toLowerCase()) { inp.focus(); inp.select(); toast(`Type ${f.dataset.name} exactly to confirm.`); return; }
+  await removeProfile(f.dataset.id); openProfiles(); toast(`${f.dataset.name} was removed from this computer.`);
+});
+$("#addProfile").addEventListener("click", () => { if ((parse(rawGet("semi.profiles")) || []).length >= MAX_PEOPLE) { toast(`Up to ${MAX_PEOPLE} people can share one computer. Remove someone first.`, 6000); return; } $("#profileActs").hidden = true; $("#newProfileForm").hidden = false; $("#newProfileName").focus(); });
 $("#newProfileCancel").addEventListener("click", () => { $("#newProfileForm").hidden = true; $("#profileActs").hidden = false; });
 $("#renameProfileToggle").addEventListener("click", () => { $("#profileActs").hidden = true; $("#renameForm").hidden = false; $("#renameName").value = profileName(); $("#renameName").focus(); $("#renameName").select(); });
 $("#renameCancel").addEventListener("click", () => { $("#renameForm").hidden = true; $("#profileActs").hidden = false; });
