@@ -1094,8 +1094,8 @@ button.prof:hover{background:var(--raise)}
         <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="backupBtn">Download a backup</button><button type="button" class="btn" id="restoreBtn">Restore from a backup…</button></div></div></div>
       <div class="f" id="seedSec" hidden><span>Books inside this file</span><div class="lock-state"><p id="seedTxt"></p>
         <div><button type="button" class="btn" id="seedBtn">Use the books in this file</button></div></div></div>
-      <div class="f" id="offlineSec" hidden><span>Write without internet</span><div class="lock-state"><p>Download Semi Colon as a single file with all your books, notes, styles and your lock inside. Open it in Chrome or Safari on any computer or tablet and it works with no wifi and no Claude. Anything you write there stays on that device: bring it back here with Download a backup, then Restore.</p>
-        <div><button type="button" class="btn" id="offlineBtn">Download an offline copy</button></div></div></div>
+      <div class="f" id="offlineSec" hidden><span>Use it with no internet</span><div class="lock-state"><p>Download Semi Colon as one file. Open it in Chrome, Edge or Safari and it works with no internet at all, even if this website ever goes away. Books written in the file stay with the file, so use <b>Download a backup</b> and <b>Restore from a backup</b> to move them between the file and the website.</p>
+        <div><button type="button" class="btn" id="offlineBtn">Download Semi Colon as a file</button></div></div></div>
       <p class="backup-status" id="backupStatus"></p><input type="file" id="restoreFile" accept=".json,application/json" hidden>
     </div>
     <p class="sub" id="storageNote" style="margin:0"></p>
@@ -3798,7 +3798,7 @@ function renderStorageNote() {
     $("#acctTxt").textContent = SB.s ? `Signed in as ${SB.s.email || "you"}. Your books are saved to your account and open on any computer where you sign in.${S.mode !== "db" ? " You're offline right now, so writing is kept here and goes up when you're back online." : ""}` : "Not signed in. Your books are only in this browser. Sign in to keep them in your account and open them anywhere.";
     $("#acctBtn").textContent = SB.s ? "Sign out" : "Sign in or create an account";
   }
-  $("#offlineSec").hidden = true;
+  $("#offlineSec").hidden = !/^https?:$/.test(location.protocol); // on the website: offer the single-file copy
   $("#seedSec").hidden = !(SEED && S.mode === "local");
   if (SEED && S.mode === "local") { const n = SEED.library.books.length; $("#seedTxt").textContent = `This file was downloaded from your Claude account on ${new Date(SEED.savedAt).toLocaleString([], {day:"numeric", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"})} and carries ${n} book${n === 1 ? "" : "s"}. If your shelf here is missing them, load them in. Books written in this browser since then would be replaced, so download a backup first if you need them.`; }
   $("#storageNote").textContent = S.mode === "db" ? "Your books are saved privately to your account. Only you can see them, on any device where you open this page."
@@ -4859,7 +4859,16 @@ $("#restoreFile").addEventListener("change", async e => {
     await importBackup(data);
   } catch (e) { toast("Import stopped: " + e.message, 9000); }
 });
-$("#offlineBtn").addEventListener("click", () => toast("This app file already works offline. Use Download a backup to move your writing to another device.", 7000));
+$("#offlineBtn").addEventListener("click", async () => {
+  const btn = $("#offlineBtn"), label = btn.textContent; btn.disabled = true; btn.textContent = "Preparing the file…";
+  try {
+    const r = await fetch(location.pathname.replace(/[^/]*$/, "") + "index.html", {cache:"no-cache"});
+    if (!r.ok) throw new Error();
+    const html = (await r.text()).replace(/<script>\n\/\* On the website: keep a copy[\s\S]*?<\/script>\n/, ""); // the file version has no website parts
+    await saveFile("Semi Colon.html", html, "text/html");
+  } catch { toast("The file couldn't be prepared. Check your internet connection and try again.", 7000); }
+  finally { btn.disabled = false; btn.textContent = label; }
+});
 $("#seedBtn").addEventListener("click", async () => { try { const data = await decodeBackup(clone(SEED)); if (data) await importBackup(data); } catch(e) { toast(e.message); } });
 $("#profileBtn").addEventListener("click", openProfiles);
 $("#gateProfiles").addEventListener("click", openProfiles);
