@@ -880,7 +880,6 @@ button.prof:hover{background:var(--raise)}
   <p class="sub">Everyone gets their own shelf on this computer. Books never mix, and switching keeps everything saved.</p>
   <div class="prof-list" id="profileList"></div>
   <form id="renameForm" class="inline-form" hidden><input id="renameName" maxlength="40" aria-label="Your name" placeholder="Your name"><button class="btn primary">Save</button><button type="button" class="btn ghost" id="renameCancel">Cancel</button></form>
-  <form id="removeForm" class="remove-box" hidden><p id="removeMsg"></p><div class="inline-form"><input id="removeName" autocomplete="off" aria-label="Type the name to confirm"><button class="btn danger" id="removeGo">Remove</button><button type="button" class="btn ghost" id="removeCancel">Cancel</button></div></form>
   <form id="newProfileForm" class="inline-form" hidden><input id="newProfileName" placeholder="Their name" aria-label="Their name" maxlength="40" required><button class="btn primary">Add</button><button type="button" class="btn ghost" id="newProfileCancel">Cancel</button></form>
   <div style="display:flex;gap:8px;flex-wrap:wrap" id="profileActs"><button class="btn" id="addProfile" type="button">Add someone</button><button class="btn ghost" id="renameProfileToggle" type="button">Change my name</button></div>
   <div class="modal-foot"><span class="fine" id="profileAccountNote"></span><button class="btn" id="profileAccountBtn" type="button">Sign in</button></div>
@@ -1092,6 +1091,10 @@ button.prof:hover{background:var(--raise)}
       <div class="f"><span>Sprint length</span><div class="seg" id="sSprint"></div></div>
       <label class="check"><input type="checkbox" id="sSmart"> Smart punctuation: curly quotes, -- becomes —, ... becomes …</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="openThemeFromSettings">Look</button><button class="btn" id="replayTour">Take the tour</button><button class="btn desk-keys" id="keysFromSettings">Keyboard shortcuts</button></div>
+      <div class="divider"></div>
+      <div class="f" id="removeSec"><span>Remove me from this computer</span><div class="lock-state"><p id="removeTxt"></p>
+        <div><button type="button" class="btn ghost danger" id="removeStart">Remove me from this computer</button></div>
+        <form id="removeForm" class="remove-box" hidden><p id="removeMsg"></p><div class="inline-form"><input id="removeName" autocomplete="off" aria-label="Type your name to confirm"><button class="btn danger" id="removeGo">Remove</button><button type="button" class="btn ghost" id="removeCancel">Cancel</button></div></form></div></div>
       <div class="divider"></div>
       <div class="f" id="acctSec" hidden><span>Account</span><div class="lock-state"><p id="acctTxt"></p>
         <div><button type="button" class="btn" id="acctBtn"></button></div></div></div>
@@ -1390,6 +1393,19 @@ let activeScope;
 try { activeScope = sessionStorage.getItem("semi.tabScope"); } catch {}
 activeScope = activeScope || rawGet("semi.scope") || "local";
 try { sessionStorage.setItem("semi.tabScope", activeScope); } catch {}
+/* A shelf removed in Settings is deleted here, after the reload and before any shelf is opened,
+   so nothing still in memory can be written into someone else's shelf. */
+(function finishRemoval() {
+  const gone = rawGet("semi.removeProfile"); if (!gone) return;
+  if (gone === activeScope) { rawDel("semi.removeProfile"); return; } // never delete the shelf being opened
+  const legacy = gone === rawGet("semi.legacyScope"), prefix = "semi.profile." + gone + ".";
+  const keep = new Set(["semi.test", "semi.owner", "semi.scope", "semi.legacyScope", "semi.profiles", "semi.removeProfile"]);
+  try { for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && (legacy ? (k.startsWith("semi.") && !k.startsWith("semi.profile.") && !keep.has(k)) : k.startsWith(prefix))) localStorage.removeItem(k); } } catch {}
+  try { indexedDB.deleteDatabase(legacy ? "semicolon" : "semicolon-profile-" + gone); } catch {}
+  try { rawSet("semi.profiles", JSON.stringify((JSON.parse(rawGet("semi.profiles") || "[]")).filter(x => x.id !== gone))); } catch {}
+  if (rawGet("semi.owner") === gone) rawDel("semi.owner");
+  rawDel("semi.removeProfile");
+})();
 function storageKey(k) {
   if (globalKeys.has(k) || !k.startsWith("semi.")) return k;
   const scope = activeScope;
@@ -3792,7 +3808,7 @@ function openSettings() {
   const s = lib.settings;
   $("#sDaily").value = s.dailyGoal; $("#sSmart").checked = s.smart;
   $("#sSprint").innerHTML = [10,15,25,45,60].map(m => `<button type="button" data-v="${m}" class="${s.sprintMin === m ? "on" : ""}">${m} min</button>`).join("");
-  renderStorageNote(); renderLockState();
+  renderStorageNote(); renderLockState(); renderRemoveSec();
   $("#settingsModal").hidden = false;
 }
 $("#sDaily").addEventListener("input", e => { const v = parseInt(e.target.value); if (v >= 50) { lib.settings.dailyGoal = v; saveLib(); updateGoalUI(); if (view === "shelf") renderShelf(); } });
@@ -4668,31 +4684,35 @@ function profileBooks(id) {
   const l = parse(rawGet(id === rawGet("semi.legacyScope") ? "semi.lib" : "semi.profile." + id + ".lib"));
   const books = (l && l.books) || []; return {n:books.length, w:books.reduce((x, b) => x + (b.words || 0), 0)};
 }
-function askRemove(id) {
-  const p = (parse(rawGet("semi.profiles")) || []).find(x => x.id === id); if (!p || id === activeScope) return;
-  const name = displayNameFor(p), {n, w} = profileBooks(id), account = !/^local/.test(id);
-  const f = $("#removeForm"); f.dataset.id = id; f.dataset.name = name; f.hidden = false; $("#profileActs").hidden = true;
-  const needType = !account && n > 0;
-  $("#removeMsg").innerHTML = account
-    ? `Remove <b>${esc(name)}</b> from this computer? Their books stay safe in their account and come back when they sign in again.`
-    : n ? `Remove <b>${esc(name)}</b>? Their ${n} book${n === 1 ? "" : "s"} (${fmt(w)} words) are only on this computer and will be <b>gone for good</b>. To keep them, switch to ${esc(name)} first and use Settings, Download a backup. To go ahead, type <b>${esc(name)}</b> below.`
-    : `Remove <b>${esc(name)}</b>? They have no books.`;
+function renderRemoveSec() {
+  const id = activeScope, {n, w} = profileBooks(id), account = !/^local/.test(id) && !!SB.s;
+  $("#removeTxt").textContent = account
+    ? "Takes your shelf off this computer and signs you out here. Your books stay safe in your account and come back when you sign in again."
+    : n ? `Deletes your shelf from this computer: ${n} book${n === 1 ? "" : "s"}, ${fmt(w)} words. They aren't saved anywhere else, so download a backup first if you want to keep them.`
+    : "Takes your empty shelf off this computer.";
+  $("#removeForm").hidden = true; $("#removeStart").hidden = false;
+}
+function askRemoveSelf() {
+  const id = activeScope, name = profileName(), {n, w} = profileBooks(id), account = !/^local/.test(id) && !!SB.s;
+  const needType = !account && n > 0, f = $("#removeForm");
+  f.dataset.name = name; f.hidden = false; $("#removeStart").hidden = true;
+  $("#removeMsg").innerHTML = needType
+    ? `Your ${n} book${n === 1 ? "" : "s"} (${fmt(w)} words) will be <b>gone for good</b> from this computer. To go ahead, type <b>${esc(name)}</b> below.`
+    : account ? "You'll be signed out here. Your books stay in your account." : "Your empty shelf will be removed.";
   const inp = $("#removeName"); inp.value = ""; inp.hidden = !needType; inp.placeholder = needType ? name : "";
-  $("#removeGo").textContent = "Remove " + name;
   (needType ? inp : $("#removeGo")).focus();
 }
-async function removeProfile(id) {
-  if (!id || id === activeScope) return;
-  const prefix = profileKeyPrefix(id), global = new Set(["semi.test", "semi.owner", "semi.scope", "semi.legacyScope", "semi.profiles"]);
-  try {
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const k = localStorage.key(i); if (!k) continue;
-      if (prefix ? k.startsWith(prefix) : (k.startsWith("semi.") && !k.startsWith("semi.profile.") && !global.has(k))) localStorage.removeItem(k);
-    }
-  } catch {}
-  try { indexedDB.deleteDatabase(prefix ? "semicolon-profile-" + id : "semicolon"); } catch {}
-  rawSet("semi.profiles", JSON.stringify((parse(rawGet("semi.profiles")) || []).filter(x => x.id !== id)));
-  if (rawGet("semi.owner") === id) rawDel("semi.owner");
+async function removeSelf() {
+  const me = activeScope;
+  try { flushPending(); if (saveT) { clearTimeout(saveT); saveT = null; saveLib(); } } catch {}
+  if (S.mode === "db") { flushAll(); await waitSaved(5000); } // anything unsent reaches the account first
+  try { releaseBook(); } catch {}
+  const others = (parse(rawGet("semi.profiles")) || []).filter(p => p.id !== me);
+  let next = (others.find(p => /^local/.test(p.id)) || others[0] || {}).id;
+  if (!next || next === me) next = "local-" + uid();
+  rawSet("semi.removeProfile", me); rawSet("semi.scope", next);
+  try { sessionStorage.setItem("semi.tabScope", next); } catch {}
+  location.reload(); // the old shelf is deleted on the way back in, before anything is loaded
 }
 function openProfiles() {
   const locked = document.body.classList.contains("locked");
@@ -4701,7 +4721,7 @@ function openProfiles() {
     const name = displayNameFor(p), here = p.id === activeScope;
     const inner = `<span class="av">${esc((name.trim()[0] || "M").toUpperCase())}</span><span><b>${esc(name)}</b><small>${esc(profileStats(p.id))}</small></span>`;
     if (here) return `<div class="prof">${inner}<span class="here">Open now</span></div>`;
-    return `<div class="prof-row"><button class="prof" type="button" data-profile="${esc(p.id)}" title="Switch to ${esc(name)}'s shelf">${inner}</button>${locked ? "" : `<button class="prof-x" type="button" data-remove="${esc(p.id)}" title="Remove ${esc(name)} from this computer" aria-label="Remove ${esc(name)} from this computer">Remove</button>`}</div>`;
+    return `<button class="prof" type="button" data-profile="${esc(p.id)}" title="Switch to ${esc(name)}'s shelf">${inner}</button>`;
   }).join("");
   $("#newProfileForm").hidden = true; $("#renameForm").hidden = true; $("#removeForm").hidden = true; $("#profileActs").hidden = false; $("#newProfileName").value = "";
   // from the lock screen you can switch or add, but not rename, remove or change the account
@@ -4916,12 +4936,12 @@ $("#profileBtn").addEventListener("click", openProfiles);
 $("#gateProfiles").addEventListener("click", openProfiles);
 $("#profileAccountBtn").addEventListener("click", () => { $("#profilesModal").hidden = true; if (SB.s) openSettings(); else { lsDel("semi.nocloud"); showAuth("signin"); } });
 $("#profileList").addEventListener("click", e => { const row = e.target.closest("[data-profile]"); if (row) { e.preventDefault(); e.stopPropagation(); switchProfile(row.dataset.profile); } });
-$("#profileList").addEventListener("click", e => { const x = e.target.closest("[data-remove]"); if (x) { e.preventDefault(); e.stopPropagation(); askRemove(x.dataset.remove); } }, true);
-$("#removeCancel").addEventListener("click", () => { $("#removeForm").hidden = true; $("#profileActs").hidden = false; });
+$("#removeStart").addEventListener("click", askRemoveSelf);
+$("#removeCancel").addEventListener("click", renderRemoveSec);
 $("#removeForm").addEventListener("submit", async e => {
   e.preventDefault(); const f = $("#removeForm"), inp = $("#removeName");
   if (!inp.hidden && inp.value.trim().toLowerCase() !== f.dataset.name.trim().toLowerCase()) { inp.focus(); inp.select(); toast(`Type ${f.dataset.name} exactly to confirm.`); return; }
-  await removeProfile(f.dataset.id); openProfiles(); toast(`${f.dataset.name} was removed from this computer.`);
+  $("#removeGo").disabled = true; $("#removeGo").textContent = "Removing…"; await removeSelf();
 });
 $("#addProfile").addEventListener("click", () => { if ((parse(rawGet("semi.profiles")) || []).length >= MAX_PEOPLE) { toast(`Up to ${MAX_PEOPLE} people can share one computer. Remove someone first.`, 6000); return; } $("#profileActs").hidden = true; $("#newProfileForm").hidden = false; $("#newProfileName").focus(); });
 $("#newProfileCancel").addEventListener("click", () => { $("#newProfileForm").hidden = true; $("#profileActs").hidden = false; });
